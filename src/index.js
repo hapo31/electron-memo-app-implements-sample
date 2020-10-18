@@ -1,10 +1,44 @@
-const { BrowserWindow, app } = require("electron");
+const { BrowserWindow, app, Menu, dialog, ipcMain } = require("electron");
+const fs = require("fs");
 
 class MemoApp {
-   constructor() {
+  constructor() {
+
+    const menu = Menu.buildFromTemplate([
+      {
+        label: "ファイル",
+        submenu: [
+          {
+            label: "ファイルを開く...",
+            click: (window) => {
+              dialog.showOpenDialog(window, {
+                title: "ファイルを開く",
+                defaultPath: "."
+              }).then(({ canceled, filePaths }) => {
+                console.log({ canceled, filePaths });
+                if (!canceled) {
+                  const [ path ] = filePaths;
+                  const buffer = fs.readFileSync(path);
+                  const content = buffer.toString("utf-8");
+                  this.mainWindow.webContents.send("LOAD_FILE", content);
+                }
+              })
+            }
+          }
+        ]
+      }
+    ]);
+
+
     this.onReady = () => {
 
-      this.mainWindow = new BrowserWindow();
+      this.mainWindow = new BrowserWindow({
+        webPreferences: {
+          nodeIntegration: true,
+        }
+      });
+
+      this.mainWindow.setMenu(menu);
 
       const mainURL = `file://${__dirname}/index.html`;
 
